@@ -1,3 +1,15 @@
+---
+title: METAHACKSAIZEN
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
+
+
 # DevOps Incident OpenEnv (Round 1 Submission)
 
 A complete OpenEnv-style real-world RL environment that simulates DevOps incident response workflows.
@@ -215,7 +227,7 @@ pip install -r requirements.txt
 
 ### Run API server
 ```bash
-python app.py
+uvicorn app:app --host 0.0.0.0 --port 7860
 ```
 
 ### Run inference
