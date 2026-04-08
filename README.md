@@ -215,7 +215,7 @@ pip install -r requirements.txt
 
 ### Run API server
 ```bash
-uvicorn app:app --host 0.0.0.0 --port 7860
+python app.py
 ```
 
 ### Run inference
