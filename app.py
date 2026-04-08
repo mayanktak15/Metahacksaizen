@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from pydantic import BaseModel
 
 from devops_openenv.environment import DevOpsIncidentEnv
@@ -13,7 +13,7 @@ _env = DevOpsIncidentEnv(task_name="incident_easy")
 
 
 class StepRequest(BaseModel):
-    action: Dict[str, Any]
+    action: Dict[str, Any] | None = None
 
 
 class ResetRequest(BaseModel):
@@ -26,24 +26,40 @@ def health() -> dict[str, str]:
 
 
 @app.post("/reset")
-def reset(req: ResetRequest) -> dict[str, Any]:
+def reset(req: ResetRequest | None = Body(default=None)) -> dict[str, Any]:
+    """Reset environment for an optional task_name and return observation JSON."""
     try:
-        obs = _env.reset(task_name=req.task_name)
-        return {"observation": obs.model_dump(), "task": _env.task_name}
+        task_name = req.task_name if req is not None else None
+        obs = _env.reset(task_name=task_name)
+        return obs.model_dump()
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"reset failed: {exc}") from exc
 
 
 @app.get("/state")
 def state() -> dict[str, Any]:
-    return {"observation": _env.state().model_dump(), "task": _env.task_name}
+    try:
+        return _env.state().model_dump()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"state failed: {exc}") from exc
 
 
 @app.post("/step")
-def step(req: StepRequest) -> dict[str, Any]:
+def step(req: StepRequest | None = Body(default=None)) -> dict[str, Any]:
+    if req is None or req.action is None:
+        raise HTTPException(status_code=400, detail="missing required field: action")
+
     try:
         result = _env.step(req.action)
-        return result.model_dump()
+        payload = result.model_dump()
+        return {
+            "observation": payload["observation"],
+            "reward": payload["reward"],
+            "done": payload["done"],
+            "info": payload["info"],
+        }
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"invalid action: {exc}") from exc
 
