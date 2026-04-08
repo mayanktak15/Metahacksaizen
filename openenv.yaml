@@ -1,0 +1,26 @@
+name: devops_incident_ops
+version: 1.0.0
+description: Real-world DevOps incident response simulation environment.
+entrypoint:
+  type: python
+  module: devops_openenv.environment
+  class: DevOpsIncidentEnv
+api:
+  reset: /reset
+  step: /step
+  state: /state
+  health: /
+tasks:
+  - name: incident_easy
+    difficulty: easy
+    grader: devops_openenv.graders.grade_task
+  - name: incident_medium
+    difficulty: medium
+    grader: devops_openenv.graders.grade_task
+  - name: incident_hard
+    difficulty: hard
+    grader: devops_openenv.graders.grade_task
+constraints:
+  max_runtime_minutes: 20
+  cpu: 2
+  memory_gb: 8

@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Python cache / virtualenv
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.log
+
+# Editor files
+.vscode/
+
+# Docs and local notes not needed in image
+raw.text
