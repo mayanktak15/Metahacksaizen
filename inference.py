@@ -14,6 +14,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 MAX_STEPS = int(os.getenv("MAX_STEPS", "12"))
 TASKS = ["incident_easy", "incident_medium", "incident_hard"]
+USE_LLM = bool(HF_TOKEN.strip())
 
 
 def log_start(task: str, env: str, model: str) -> None:
@@ -123,9 +124,12 @@ def run_task(task_name: str, client: OpenAI) -> None:
 
     try:
         for step_num in range(1, MAX_STEPS + 1):
-            try:
-                action = llm_choose_action(client=client, observation=obs)
-            except Exception:
+            if USE_LLM:
+                try:
+                    action = llm_choose_action(client=client, observation=obs)
+                except Exception:
+                    action = heuristic_action(task_name=task_name, step=step_num)
+            else:
                 action = heuristic_action(task_name=task_name, step=step_num)
 
             action_str = json.dumps(action, ensure_ascii=True, separators=(",", ":"))

@@ -31,6 +31,7 @@ class DevOpsIncidentEnv:
         self.last_action: str | None = None
         self.event_log: list[str] = [f"task_loaded:{self.task.name}"]
         self.actions_taken: list[EnvAction] = []
+        self._api_restarted = False
 
     def reset(self, task_name: str | None = None) -> Observation:
         if task_name is not None:
@@ -76,7 +77,10 @@ class DevOpsIncidentEnv:
             ActionType.ROLLBACK_SERVICE,
             ActionType.SCALE_SERVICE,
             ActionType.INSPECT_LOGS,
-        } and (not action.service or action.service not in self.services and action.service not in self.logs):
+        } and (
+            not action.service
+            or (action.service not in self.services and action.service not in self.logs)
+        ):
             self.last_action_error = "invalid_or_missing_service"
             self.event_log.append("error:invalid_service")
             return
@@ -92,6 +96,8 @@ class DevOpsIncidentEnv:
         elif action.action_type == ActionType.RESTART_SERVICE:
             svc = self.services[action.service]
             svc.status = "healthy"
+            if self.task.name == "incident_hard" and action.service == "api":
+                self._api_restarted = True
             self.event_log.append(f"restart_service:{action.service}")
 
         elif action.action_type == ActionType.ROLLBACK_SERVICE:
@@ -158,10 +164,8 @@ class DevOpsIncidentEnv:
         self._apply_action(parsed)
 
         if self.task.name == "incident_hard":
-            if self.config.get("max_connections") and self.services["db-proxy"].status == "healthy":
-                has_api_restart = any(a.action_type == ActionType.RESTART_SERVICE and a.service == "api" for a in self.actions_taken)
-                if has_api_restart:
-                    self.services["api"].status = "healthy"
+            if self.config.get("max_connections") and self.services["db-proxy"].status == "healthy" and self._api_restarted:
+                self.services["api"].status = "healthy"
 
         recovered = self._is_recovered()
         breakdown = grade_task(task=self.task, actions=self.actions_taken, recovered=recovered)
